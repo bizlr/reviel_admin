@@ -98,12 +98,29 @@ export default function ReferralLeaderboard() {
 
   // Compute analytics (same as Dashboard's referral section)
   const total = waitlist.length;
+
+  // Build lookup: code -> owner info
+  const codeOwnerMap = {};
+  waitlist.forEach((item) => {
+    if (item.referralCode) {
+      const code = item.referralCode.trim();
+      if (code) {
+        codeOwnerMap[code] = {
+          name: item.name || item.firstName || item.displayName || '',
+          email: item.email || '',
+        };
+      }
+    }
+  });
+
+  // Referral breakdown calculations using referredBy
   let referralTotalCount = 0;
   const refCounts = {};
   const refCodeUsers = {};
+
   waitlist.forEach(item => {
-    if (item.referralCode) {
-      const code = item.referralCode.trim();
+    if (item.referredBy) {
+      const code = item.referredBy.trim();
       if (code) {
         refCounts[code] = (refCounts[code] || 0) + 1;
         referralTotalCount++;
@@ -148,23 +165,33 @@ export default function ReferralLeaderboard() {
       custom: ({ series, seriesIndex, dataPointIndex, w }) => {
         const code = w.globals.labels[dataPointIndex];
         const count = series[seriesIndex][dataPointIndex];
+        const owner = codeOwnerMap[code];
+        const ownerHtml = owner
+          ? `<div style="font-size:0.78rem;color:#4B5563;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed #E2E8F0;">
+              Shared by: <strong style="color:#1F2937;">${owner.name}</strong>
+             </div>`
+          : `<div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed #E2E8F0;font-style:italic;">
+              Unknown owner
+             </div>`;
         const users = refCodeUsers[code] || [];
         const shown = users.slice(0, 6);
         const extra = users.length - shown.length;
         const rows = shown.map(u => {
           const name = u.name || '<em style="opacity:0.5">No name</em>';
           const email = u.email || '—';
-          return `<div style="display:flex;flex-direction:column;padding:6px 0;border-bottom:1px solid #E2E8F0;">
-            <span style="font-weight:600;color:#1E293B;font-size:0.82rem;">${name}</span>
-            <span style="color:#64748B;font-size:0.76rem;">${email}</span>
+          return `<div style="display:flex;flex-direction:column;padding:4px 0;border-bottom:1px solid #F1F5F9;">
+            <span style="font-weight:600;color:#1E293B;font-size:0.8rem;">${name}</span>
+            <span style="color:#64748B;font-size:0.74rem;">${email}</span>
           </div>`;
         }).join('');
-        return `<div style="font-family:'Outfit',sans-serif;padding:14px 16px;min-width:220px;max-width:300px;border-radius:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        return `<div style="font-family:'Outfit',sans-serif;padding:14px 16px;min-width:240px;max-width:320px;border-radius:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <span style="font-weight:700;color:#1E293B;font-size:0.9rem;"><svg aria-hidden="true" focusable="false" viewBox="0 0 576 512" style="width:14px;height:14px;fill:#F59E0B;margin-right:4px;display:inline-block;vertical-align:middle;"><path d="M400 96h48v96c0 12.12-2.9 23.55-8 33.64C428.3 203.2 400 172.9 400 136V96zM128 192V96h48v40c0 36.9-28.3 67.2-40 89.64C130.9 215.6 128 204.1 128 192zM0 128c0 40.59 23.38 75.75 57 92.83C81.87 266.3 124 288 124 288H192c0 23.01 10.02 43.68 26 58v18H176c-30.88 0-56 25.12-56 56v32c0 13.25 10.75 24 24 24h288c13.25 0 24-10.75 24-24v-32c0-30.88-25.12-56-56-56h-42v-18c15.98-14.32 26-34.99 26-58h68s42.13-21.7 67-67.17c33.62-17.08 57-52.24 57-92.83 0-53.02-42.98-96-96-96h-64C416 16 384 0 352 0H224C192 0 160 16 128 32H64C30.98 32 0 74.98 0 128z"></path></svg> ${code}</span>
-            <span style="background:#D1FAE5;color:#059669;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:20px;">${count} sign-up${count !== 1 ? 's' : ''}</span>
+            <span style="background:#D1FAE5;color:#059669;font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:20px;">${count} invite${count !== 1 ? 's' : ''}</span>
           </div>
-          ${rows}
+          ${ownerHtml}
+          <div style="font-weight:600;color:#64748B;font-size:0.76rem;text-transform:uppercase;margin-top:6px;margin-bottom:4px;">Referred Signups:</div>
+          ${rows || '<div style="font-style:italic;color:#9CA3AF;font-size:0.76rem;padding:4px 0;">No details</div>'}
           ${extra > 0 ? `<div style="color:#64748B;font-size:0.76rem;margin-top:8px;">+ ${extra} more</div>` : ''}
         </div>`;
       },
