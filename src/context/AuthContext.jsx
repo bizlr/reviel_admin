@@ -6,7 +6,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const login = (email, password) => {
-    const validEmail = 'info@reviel.com';
+    const validEmail = 'info@reviel.app';
     const validPassword = 'Reviel@007';
     if (email === validEmail && password === validPassword) {
       setIsAuthenticated(true);

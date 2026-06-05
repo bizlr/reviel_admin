@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Dashboard from './Dashboard';
 
-const hardcodedEmail = 'info@reviel.com';
+const hardcodedEmail = 'info@reviel.app';
 const hardcodedPassword = 'Reviel@007';
 
 function Login({ onLoginSuccess }) {
