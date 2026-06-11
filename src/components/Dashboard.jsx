@@ -9,7 +9,7 @@ import {
   faChartBar, faUsers, faBars, faXmark, faChartLine,
   faMobileScreenButton, faDesktop, faGlobe, faChartPie,
   faDownload, faRightFromBracket, faShareNodes, faPercent, faTrophy,
-  faMagnifyingGlass, faKey, faSliders
+  faMagnifyingGlass, faKey, faSliders, faSortUp, faSortDown, faSort
 } from '@fortawesome/free-solid-svg-icons';
 
 /* ── helpers ── */
@@ -89,6 +89,8 @@ function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sortField, setSortField] = useState('createdAt'); // default sorted by date
+  const [sortDirection, setSortDirection] = useState('desc'); // default descending order
 
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -466,10 +468,60 @@ function Dashboard() {
     return email.includes(q) || country.includes(q) || refCode.includes(q) || refBy.includes(q) || devInfo.includes(q);
   });
 
+  // Sort handler function
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  // Sorted and Filtered directory list
+  const sortedFilteredWaitlist = [...filteredWaitlist].sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+
+    // Field normalization
+    if (sortField === 'name') {
+      aVal = a.name || a.firstName || a.displayName || '';
+      bVal = b.name || b.firstName || b.displayName || '';
+    } else if (sortField === 'deviceType') {
+      aVal = detectDevice(a.deviceInfo);
+      bVal = detectDevice(b.deviceInfo);
+    } else if (sortField === 'browser') {
+      aVal = detectBrowser(a.deviceInfo);
+      bVal = detectBrowser(b.deviceInfo);
+    } else if (sortField === 'os') {
+      aVal = detectOS(a.deviceInfo);
+      bVal = detectOS(b.deviceInfo);
+    } else if (sortField === 'country') {
+      aVal = a.geoCountry || a.country || '';
+      bVal = b.geoCountry || b.country || '';
+    } else if (sortField === 'createdAt') {
+      aVal = toDate(a.createdAt).getTime();
+      bVal = toDate(b.createdAt).getTime();
+    } else {
+      aVal = aVal || '';
+      bVal = bVal || '';
+    }
+
+    if (typeof aVal === 'string') {
+      aVal = aVal.toLowerCase();
+      bVal = bVal.toLowerCase();
+    }
+
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   // Pagination bounds
-  const totalItems = filteredWaitlist.length;
+  const totalItems = sortedFilteredWaitlist.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const currentItems = filteredWaitlist.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const currentItems = sortedFilteredWaitlist.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const handlePageChange = (p) => {
     if (p >= 1 && p <= totalPages) {
@@ -811,15 +863,114 @@ function Dashboard() {
                   <table className="data-table" style={{ margin: '0' }}>
                     <thead>
                       <tr>
-                        <th style={{ padding: '16px' }}>Name</th>
-                        <th>Email Address</th>
-                        <th>Registration Date</th>
-                        <th>Country</th>
-                        <th>Device Type</th>
-                        <th>Browser</th>
-                        <th>Operating System</th>
-                        <th>Referral Code</th>
-                        <th>Invite Code Used</th>
+                        <th 
+                          onClick={() => handleSort('name')} 
+                          style={{ padding: '16px', cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Name
+                            <FontAwesomeIcon 
+                              icon={sortField === 'name' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'name' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('email')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Email Address
+                            <FontAwesomeIcon 
+                              icon={sortField === 'email' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'email' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('createdAt')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Registration Date
+                            <FontAwesomeIcon 
+                              icon={sortField === 'createdAt' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'createdAt' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('country')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Country
+                            <FontAwesomeIcon 
+                              icon={sortField === 'country' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'country' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('deviceType')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Device Type
+                            <FontAwesomeIcon 
+                              icon={sortField === 'deviceType' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'deviceType' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('browser')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Browser
+                            <FontAwesomeIcon 
+                              icon={sortField === 'browser' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'browser' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('os')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Operating System
+                            <FontAwesomeIcon 
+                              icon={sortField === 'os' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'os' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('referralCode')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Referral Code
+                            <FontAwesomeIcon 
+                              icon={sortField === 'referralCode' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'referralCode' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSort('referredBy')} 
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Invite Code Used
+                            <FontAwesomeIcon 
+                              icon={sortField === 'referredBy' ? (sortDirection === 'asc' ? faSortUp : faSortDown) : faSort} 
+                              style={{ opacity: sortField === 'referredBy' ? 1 : 0.3, fontSize: '0.8rem' }}
+                            />
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
